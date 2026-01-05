@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beranda - Desa Mangli</title>
+    <link rel="stylesheet" href="style/peta.css" />
+    <style>
+      /* agar iframe penuh di konten */
+      .iframe-container {
+        width: 100%;
+        height: calc(100vh - 70px); /* 70px = tinggi navbar */
+        border: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- NAVBAR -->
+    <header>
+      <nav class="navbar">
+        <div class="logo-area">
+          <img src="img/Pemalang.png" class="logo" alt="Logo Pemalang" />
+          <div class="logo-text">
+            <h2>Geoportal</h2>
+            <span>Kecamatan Randudongkal</span>
+          </div>
+        </div>
+
+        <!-- HAMBURGER -->
+        <div class="hamburger" id="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <!-- MENU -->
+        <ul class="nav-links" id="navLinks">
+          <li><a href="index.html">Beranda</a></li>
+          <li><a href="desa.html">Desa</a></li>
+
+          <!-- DROPDOWN -->
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle">
+              Geografis
+              <span class="arrow">▾</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li><a href="kecamatan.html">Kecamatan Randudongkal</a></li>
+              <li><a href="mangli.html">Desa Mangli</a></li>
+              <li><a href="3desa.html">Desa Kalitorong</a></li>
+              <li><a href="kalimas.html">Desa Kalimas</a></li>
+              <li><a href="lodaya.html">Desa Lodaya</a></li>
+            </ul>
+          </li>
+
+          <li><a href="tentang.html">Tentang</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="judul-container">
+      <div class="judul-kotak">
+        <h2>Administratif Desa Mangli</h2>
+      </div>
+    </div>
+
+    <!-- MEMANGGIL HALAMAN LAIN -->
+    <iframe
+      src="Desa_Mangli/index.html"
+      class="iframe-container"
+      title="Halaman Desa 1"
+    ></iframe>
+
+    <!-- PANGGIL SCRIPT -->
+    <script src="script/script.js"></script>
+  </body>
+</html>

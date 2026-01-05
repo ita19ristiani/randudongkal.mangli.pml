@@ -1,0 +1,358 @@
+/* =====================================================
+   RESET & BASE
+===================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   NAVBAR
+===================================================== */
+.navbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: calc(100% - 40px);
+  max-width: 1400px;
+
+  height: 70px;
+  padding: 0 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  z-index: 1000;
+}
+
+/* ======================
+   LOGO AREA
+====================== */
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Jarak logo & teks (rapi) */
+}
+
+/* Logo otomatis menyesuaikan ukuran */
+.logo {
+  height: 38px; /* 🔥 dinaikkan dari 32px */
+  width: auto; /* supaya tidak gepeng */
+  display: block;
+}
+
+/* ======================
+   TEKS LOGO
+====================== */
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.1; /* Biar rapat */
+}
+
+.logo-text h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1; /* Rapat */
+  color: #222;
+}
+
+.logo-text span {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.1; /* Rapat */
+}
+
+/* ======================
+   MENU DESKTOP
+====================== */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  list-style: none;
+}
+
+.nav-links a {
+  position: relative;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  padding: 6px 0;
+}
+
+/* underline */
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background: #ff6b00;
+  transition: 0.3s;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.nav-links a:hover {
+  color: #ff6b00;
+}
+
+/* ======================
+   DROPDOWN
+====================== */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.arrow {
+  transition: 0.3s;
+}
+
+/* SUBMENU DEFAULT (TERSEMBUNYI) */
+.dropdown-menu {
+  position: absolute;
+  top: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+
+  background: #fff;
+  min-width: 190px;
+  border-radius: 12px;
+  padding: 6px 0;
+
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.15);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s ease;
+
+  list-style: none;
+  margin: 0;
+}
+
+/* TEKS SUBMENU */
+.dropdown-menu a {
+  display: block;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+}
+
+/* HOVER SUBMENU */
+.dropdown-menu a:hover {
+  color: #ff6b00;
+  background: rgba(255, 107, 0, 0.05);
+}
+
+/* ======================
+   KUNCI UTAMA:
+   dropdown aktif karena KLIK
+====================== */
+.dropdown.active .dropdown-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown.active .arrow {
+  transform: rotate(180deg);
+}
+
+/* ======================
+   HAMBURGER
+====================== */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.hamburger span {
+  width: 26px;
+  height: 3px;
+  background: #333;
+  border-radius: 3px;
+  transition: 0.3s;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* =====================================================
+   MOBILE (≤768px)
+===================================================== */
+@media (max-width: 768px) {
+  .navbar {
+    top: 10px;
+    width: calc(100% - 20px);
+    border-radius: 16px;
+    padding: 0 16px;
+  }
+
+  .hamburger {
+    display: flex;
+    gap: 4px;
+  }
+
+  .hamburger span {
+    width: 22px;
+    height: 2.5px;
+  }
+
+  /* PANEL MENU */
+  .nav-links {
+    position: fixed;
+    top: 70px;
+    right: -260px;
+    width: 210px;
+    padding: 16px;
+
+    flex-direction: column;
+    gap: 6px;
+
+    background: #fff;
+    border-radius: 18px 0 0 18px;
+    box-shadow: -6px 0 25px rgba(0, 0, 0, 0.2);
+
+    transition: 0.4s;
+  }
+
+  .nav-links.active {
+    right: 0;
+  }
+
+  .nav-links a {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 0;
+  }
+
+  /* ===========================
+     DROPDOWN MOBILE — FIX SHIFT
+  =========================== */
+
+  /* pastikan tombol Geografis selalu rata tengah */
+  .dropdown-toggle {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* parent harus relative */
+  .dropdown {
+    position: relative;
+    width: 100%;
+  }
+
+  /* submenu overlay — tidak dorong layout */
+  .dropdown-menu {
+    position: absolute;
+    top: 100%; /* tepat di bawah Geografis */
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 92%;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+
+    padding: 8px 0;
+    margin-top: 6px;
+
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.25s ease;
+    z-index: 999; /* supaya tidak ketutup */
+  }
+
+  .dropdown-menu a {
+    display: block;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 13px;
+  }
+
+  /* saat aktif hanya tampil — tidak mendorong menu */
+  .dropdown.active .dropdown-menu {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .dropdown.active .arrow {
+    transform: rotate(180deg);
+  }
+}
+
+/* ====== KOTAK JUDUL ====== */
+.judul-container {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* ➜ tengah horizontal */
+  margin-top: 95px; /* jarak dari navbar */
+  margin: 95px auto 20px;
+}
+
+/* ====== KOTAK JUDUL ====== */
+.judul-kotak {
+  display: inline-block;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #eda061, #ffd83e);
+  color: #0f0303;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  letter-spacing: 0.4px;
+  text-align: center;
+  width: max-content; /* ➜ lebar mengikuti teks */
+  max-width: 90vw; /* ➜ aman di HP */
+}
+
+.judul-kotak h2 {
+  font-size: 22px;
+  font-weight: 700;
+}

@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="data/PoligonLodaya_2.js"></script>
+        <script src="data/RWLodaya_3.js"></script>
+        <script src="data/RTlodaya_4.js"></script>
+        <script src="data/PoligonsawahLodaya_5.js"></script>
+        <script src="data/PoligonMakamLodaya_6.js"></script>
+        <script src="data/LapanganLodaya_7.js"></script>
+        <script src="data/SungaiLodaya_8.js"></script>
+        <script src="data/JalanGangLodaya_9.js"></script>
+        <script src="data/JalanDesaLodaya_10.js"></script>
+        <script src="data/JalanKecamatanLodaya_11.js"></script>
+        <script src="data/PointDesaLodaya_12.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: 'rgba(255, 255, 0, 1.00)',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: 'rgba(255, 255, 0, 1.00)',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-7.088950961498674,109.29222309356508],[-7.062519111345536,109.34755962808528]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'feet',
+            secondaryLengthUnit: 'miles',
+            primaryAreaUnit: 'sqfeet',
+            secondaryAreaUnit: 'sqmiles'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        map.createPane('pane_GoogleMaps_1');
+        map.getPane('pane_GoogleMaps_1').style.zIndex = 401;
+        var layer_GoogleMaps_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleMaps_1',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+        });
+        layer_GoogleMaps_1;
+        map.addLayer(layer_GoogleMaps_1);
+        function pop_PoligonLodaya_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Kades'] !== null ? autolinker.link(String(feature.properties['Kades']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Luas'] !== null ? autolinker.link(String(feature.properties['Luas']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['JmlPend'] !== null ? autolinker.link(String(feature.properties['JmlPend']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PoligonLodaya_2_0() {
+            return {
+                pane: 'pane_PoligonLodaya_2',
+                opacity: 1,
+                color: 'rgba(39,73,246,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PoligonLodaya_2');
+        map.getPane('pane_PoligonLodaya_2').style.zIndex = 402;
+        map.getPane('pane_PoligonLodaya_2').style['mix-blend-mode'] = 'normal';
+        var layer_PoligonLodaya_2 = new L.geoJson(json_PoligonLodaya_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PoligonLodaya_2',
+            layerName: 'layer_PoligonLodaya_2',
+            pane: 'pane_PoligonLodaya_2',
+            onEachFeature: pop_PoligonLodaya_2,
+            style: style_PoligonLodaya_2_0,
+        });
+        bounds_group.addLayer(layer_PoligonLodaya_2);
+        map.addLayer(layer_PoligonLodaya_2);
+        function pop_RWLodaya_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RWLodaya_3_0(feature) {
+            switch(String(feature.properties['Nama'])) {
+                case 'RW 1':
+                    return {
+                pane: 'pane_RWLodaya_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,245,57,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'RW 2':
+                    return {
+                pane: 'pane_RWLodaya_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,202,189,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_RWLodaya_3');
+        map.getPane('pane_RWLodaya_3').style.zIndex = 403;
+        map.getPane('pane_RWLodaya_3').style['mix-blend-mode'] = 'normal';
+        var layer_RWLodaya_3 = new L.geoJson(json_RWLodaya_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_RWLodaya_3',
+            layerName: 'layer_RWLodaya_3',
+            pane: 'pane_RWLodaya_3',
+            onEachFeature: pop_RWLodaya_3,
+            style: style_RWLodaya_3_0,
+        });
+        bounds_group.addLayer(layer_RWLodaya_3);
+        map.addLayer(layer_RWLodaya_3);
+        function pop_RTlodaya_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RTlodaya_4_0(feature) {
+            switch(String(feature.properties['Nama'])) {
+                case 'RT 1 RW 1':
+                    return {
+                pane: 'pane_RTlodaya_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(235,126,67,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'RT 1 RW 2':
+                    return {
+                pane: 'pane_RTlodaya_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,93,254,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'RT 2 RW 1':
+                    return {
+                pane: 'pane_RTlodaya_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,208,59,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'RT 2 RW 2':
+                    return {
+                pane: 'pane_RTlodaya_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(73,59,151,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'RT 3 RW 1':
+                    return {
+                pane: 'pane_RTlodaya_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(89,155,255,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_RTlodaya_4');
+        map.getPane('pane_RTlodaya_4').style.zIndex = 404;
+        map.getPane('pane_RTlodaya_4').style['mix-blend-mode'] = 'normal';
+        var layer_RTlodaya_4 = new L.geoJson(json_RTlodaya_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_RTlodaya_4',
+            layerName: 'layer_RTlodaya_4',
+            pane: 'pane_RTlodaya_4',
+            onEachFeature: pop_RTlodaya_4,
+            style: style_RTlodaya_4_0,
+        });
+        bounds_group.addLayer(layer_RTlodaya_4);
+        map.addLayer(layer_RTlodaya_4);
+        function pop_PoligonsawahLodaya_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PoligonsawahLodaya_5_0() {
+            return {
+                pane: 'pane_PoligonsawahLodaya_5',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(102,229,59,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PoligonsawahLodaya_5');
+        map.getPane('pane_PoligonsawahLodaya_5').style.zIndex = 405;
+        map.getPane('pane_PoligonsawahLodaya_5').style['mix-blend-mode'] = 'normal';
+        var layer_PoligonsawahLodaya_5 = new L.geoJson(json_PoligonsawahLodaya_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PoligonsawahLodaya_5',
+            layerName: 'layer_PoligonsawahLodaya_5',
+            pane: 'pane_PoligonsawahLodaya_5',
+            onEachFeature: pop_PoligonsawahLodaya_5,
+            style: style_PoligonsawahLodaya_5_0,
+        });
+        bounds_group.addLayer(layer_PoligonsawahLodaya_5);
+        map.addLayer(layer_PoligonsawahLodaya_5);
+        function pop_PoligonMakamLodaya_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PoligonMakamLodaya_6_0() {
+            return {
+                pane: 'pane_PoligonMakamLodaya_6',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(162,113,0,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PoligonMakamLodaya_6');
+        map.getPane('pane_PoligonMakamLodaya_6').style.zIndex = 406;
+        map.getPane('pane_PoligonMakamLodaya_6').style['mix-blend-mode'] = 'normal';
+        var layer_PoligonMakamLodaya_6 = new L.geoJson(json_PoligonMakamLodaya_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PoligonMakamLodaya_6',
+            layerName: 'layer_PoligonMakamLodaya_6',
+            pane: 'pane_PoligonMakamLodaya_6',
+            onEachFeature: pop_PoligonMakamLodaya_6,
+            style: style_PoligonMakamLodaya_6_0,
+        });
+        bounds_group.addLayer(layer_PoligonMakamLodaya_6);
+        map.addLayer(layer_PoligonMakamLodaya_6);
+        function pop_LapanganLodaya_7(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LapanganLodaya_7_0() {
+            return {
+                pane: 'pane_LapanganLodaya_7',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,198,18,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_LapanganLodaya_7');
+        map.getPane('pane_LapanganLodaya_7').style.zIndex = 407;
+        map.getPane('pane_LapanganLodaya_7').style['mix-blend-mode'] = 'normal';
+        var layer_LapanganLodaya_7 = new L.geoJson(json_LapanganLodaya_7, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_LapanganLodaya_7',
+            layerName: 'layer_LapanganLodaya_7',
+            pane: 'pane_LapanganLodaya_7',
+            onEachFeature: pop_LapanganLodaya_7,
+            style: style_LapanganLodaya_7_0,
+        });
+        bounds_group.addLayer(layer_LapanganLodaya_7);
+        map.addLayer(layer_LapanganLodaya_7);
+        function pop_SungaiLodaya_8(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_SungaiLodaya_8_0() {
+            return {
+                pane: 'pane_SungaiLodaya_8',
+                opacity: 1,
+                color: 'rgba(39,153,235,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_SungaiLodaya_8');
+        map.getPane('pane_SungaiLodaya_8').style.zIndex = 408;
+        map.getPane('pane_SungaiLodaya_8').style['mix-blend-mode'] = 'normal';
+        var layer_SungaiLodaya_8 = new L.geoJson(json_SungaiLodaya_8, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_SungaiLodaya_8',
+            layerName: 'layer_SungaiLodaya_8',
+            pane: 'pane_SungaiLodaya_8',
+            onEachFeature: pop_SungaiLodaya_8,
+            style: style_SungaiLodaya_8_0,
+        });
+        bounds_group.addLayer(layer_SungaiLodaya_8);
+        map.addLayer(layer_SungaiLodaya_8);
+        function pop_JalanGangLodaya_9(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_JalanGangLodaya_9_0() {
+            return {
+                pane: 'pane_JalanGangLodaya_9',
+                opacity: 1,
+                color: 'rgba(197,195,192,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_JalanGangLodaya_9');
+        map.getPane('pane_JalanGangLodaya_9').style.zIndex = 409;
+        map.getPane('pane_JalanGangLodaya_9').style['mix-blend-mode'] = 'normal';
+        var layer_JalanGangLodaya_9 = new L.geoJson(json_JalanGangLodaya_9, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_JalanGangLodaya_9',
+            layerName: 'layer_JalanGangLodaya_9',
+            pane: 'pane_JalanGangLodaya_9',
+            onEachFeature: pop_JalanGangLodaya_9,
+            style: style_JalanGangLodaya_9_0,
+        });
+        bounds_group.addLayer(layer_JalanGangLodaya_9);
+        map.addLayer(layer_JalanGangLodaya_9);
+        function pop_JalanDesaLodaya_10(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_JalanDesaLodaya_10_0() {
+            return {
+                pane: 'pane_JalanDesaLodaya_10',
+                opacity: 1,
+                color: 'rgba(161,154,148,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 8.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_JalanDesaLodaya_10');
+        map.getPane('pane_JalanDesaLodaya_10').style.zIndex = 410;
+        map.getPane('pane_JalanDesaLodaya_10').style['mix-blend-mode'] = 'normal';
+        var layer_JalanDesaLodaya_10 = new L.geoJson(json_JalanDesaLodaya_10, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_JalanDesaLodaya_10',
+            layerName: 'layer_JalanDesaLodaya_10',
+            pane: 'pane_JalanDesaLodaya_10',
+            onEachFeature: pop_JalanDesaLodaya_10,
+            style: style_JalanDesaLodaya_10_0,
+        });
+        bounds_group.addLayer(layer_JalanDesaLodaya_10);
+        map.addLayer(layer_JalanDesaLodaya_10);
+        function pop_JalanKecamatanLodaya_11(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_JalanKecamatanLodaya_11_0() {
+            return {
+                pane: 'pane_JalanKecamatanLodaya_11',
+                opacity: 1,
+                color: 'rgba(97,92,91,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 11.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_JalanKecamatanLodaya_11');
+        map.getPane('pane_JalanKecamatanLodaya_11').style.zIndex = 411;
+        map.getPane('pane_JalanKecamatanLodaya_11').style['mix-blend-mode'] = 'normal';
+        var layer_JalanKecamatanLodaya_11 = new L.geoJson(json_JalanKecamatanLodaya_11, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_JalanKecamatanLodaya_11',
+            layerName: 'layer_JalanKecamatanLodaya_11',
+            pane: 'pane_JalanKecamatanLodaya_11',
+            onEachFeature: pop_JalanKecamatanLodaya_11,
+            style: style_JalanKecamatanLodaya_11_0,
+        });
+        bounds_group.addLayer(layer_JalanKecamatanLodaya_11);
+        map.addLayer(layer_JalanKecamatanLodaya_11);
+        function pop_PointDesaLodaya_12(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nama'] !== null ? autolinker.link(String(feature.properties['Nama']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PointDesaLodaya_12_0() {
+            return {
+                pane: 'pane_PointDesaLodaya_12',
+        rotationAngle: 0.0,
+        rotationOrigin: 'center center',
+        icon: L.icon({
+            iconUrl: 'markers/PointDesaLodaya_12.svg',
+            iconSize: [19.0, 19.0]
+        }),
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PointDesaLodaya_12');
+        map.getPane('pane_PointDesaLodaya_12').style.zIndex = 412;
+        map.getPane('pane_PointDesaLodaya_12').style['mix-blend-mode'] = 'normal';
+        var layer_PointDesaLodaya_12 = new L.geoJson(json_PointDesaLodaya_12, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PointDesaLodaya_12',
+            layerName: 'layer_PointDesaLodaya_12',
+            pane: 'pane_PointDesaLodaya_12',
+            onEachFeature: pop_PointDesaLodaya_12,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.marker(latlng, style_PointDesaLodaya_12_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PointDesaLodaya_12);
+        map.addLayer(layer_PointDesaLodaya_12);
+        map.on("zoomend", function(e) {
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_RWLodaya_3);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_RWLodaya_3);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 16) {
+                map.addLayer(layer_RTlodaya_4);
+            } else if (map.getZoom() > 19 || map.getZoom() < 16) {
+                map.removeLayer(layer_RTlodaya_4);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_PoligonsawahLodaya_5);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_PoligonsawahLodaya_5);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_PoligonMakamLodaya_6);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_PoligonMakamLodaya_6);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_LapanganLodaya_7);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_LapanganLodaya_7);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_SungaiLodaya_8);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_SungaiLodaya_8);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanGangLodaya_9);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanGangLodaya_9);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanDesaLodaya_10);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanDesaLodaya_10);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanKecamatanLodaya_11);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanKecamatanLodaya_11);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 16) {
+                map.addLayer(layer_PointDesaLodaya_12);
+            } else if (map.getZoom() > 19 || map.getZoom() < 16) {
+                map.removeLayer(layer_PointDesaLodaya_12);
+            }
+        });
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_RWLodaya_3);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_RWLodaya_3);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 16) {
+                map.addLayer(layer_RTlodaya_4);
+            } else if (map.getZoom() > 19 || map.getZoom() < 16) {
+                map.removeLayer(layer_RTlodaya_4);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_PoligonsawahLodaya_5);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_PoligonsawahLodaya_5);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_PoligonMakamLodaya_6);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_PoligonMakamLodaya_6);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 14) {
+                map.addLayer(layer_LapanganLodaya_7);
+            } else if (map.getZoom() > 19 || map.getZoom() < 14) {
+                map.removeLayer(layer_LapanganLodaya_7);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_SungaiLodaya_8);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_SungaiLodaya_8);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanGangLodaya_9);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanGangLodaya_9);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanDesaLodaya_10);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanDesaLodaya_10);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 15) {
+                map.addLayer(layer_JalanKecamatanLodaya_11);
+            } else if (map.getZoom() > 19 || map.getZoom() < 15) {
+                map.removeLayer(layer_JalanKecamatanLodaya_11);
+            }
+            if (map.getZoom() <= 19 && map.getZoom() >= 16) {
+                map.addLayer(layer_PointDesaLodaya_12);
+            } else if (map.getZoom() > 19 || map.getZoom() < 16) {
+                map.removeLayer(layer_PointDesaLodaya_12);
+            }
+        var overlaysTree = [
+        {label: '<b>Point</b>',  selectAllCheckbox: true, children: [
+            {label: '<img src="legend/PointDesaLodaya_12.png" /> Point Desa Lodaya', layer: layer_PointDesaLodaya_12},]},
+        {label: '<b>Jalan</b>', collapsed: true, selectAllCheckbox: true, children: [
+            {label: '<img src="legend/JalanKecamatanLodaya_11.png" /> Jalan Kecamatan Lodaya', layer: layer_JalanKecamatanLodaya_11},
+            {label: '<img src="legend/JalanDesaLodaya_10.png" /> Jalan Desa Lodaya', layer: layer_JalanDesaLodaya_10},
+            {label: '<img src="legend/JalanGangLodaya_9.png" /> Jalan Gang Lodaya', layer: layer_JalanGangLodaya_9},]},
+        {label: '<b>Perairan</b>', collapsed: true, selectAllCheckbox: true, children: [
+            {label: '<img src="legend/SungaiLodaya_8.png" /> Sungai Lodaya', layer: layer_SungaiLodaya_8},]},
+        {label: '<b>Lapangan</b>', collapsed: true, selectAllCheckbox: true, children: [
+            {label: '<img src="legend/LapanganLodaya_7.png" /> Lapangan Lodaya', layer: layer_LapanganLodaya_7},]},
+        {label: '<b>Makam</b>', collapsed: true, selectAllCheckbox: true, children: [
+            {label: '<img src="legend/PoligonMakamLodaya_6.png" /> Poligon Makam Lodaya', layer: layer_PoligonMakamLodaya_6},]},
+        {label: '<b>Sawah</b>',  selectAllCheckbox: true, children: [
+            {label: '<img src="legend/PoligonsawahLodaya_5.png" /> Poligon sawah Lodaya', layer: layer_PoligonsawahLodaya_5},]},
+            {label: 'RT lodaya<br /><table><tr><td style="text-align: center;"><img src="legend/RTlodaya_4_RT1RW10.png" /></td><td>RT 1 RW 1</td></tr><tr><td style="text-align: center;"><img src="legend/RTlodaya_4_RT1RW21.png" /></td><td>RT 1 RW 2</td></tr><tr><td style="text-align: center;"><img src="legend/RTlodaya_4_RT2RW12.png" /></td><td>RT 2 RW 1</td></tr><tr><td style="text-align: center;"><img src="legend/RTlodaya_4_RT2RW23.png" /></td><td>RT 2 RW 2</td></tr><tr><td style="text-align: center;"><img src="legend/RTlodaya_4_RT3RW14.png" /></td><td>RT 3 RW 1</td></tr></table>', layer: layer_RTlodaya_4},
+            {label: 'RW Lodaya<br /><table><tr><td style="text-align: center;"><img src="legend/RWLodaya_3_RW10.png" /></td><td>RW 1</td></tr><tr><td style="text-align: center;"><img src="legend/RWLodaya_3_RW21.png" /></td><td>RW 2</td></tr></table>', layer: layer_RWLodaya_3},
+            {label: '<img src="legend/PoligonLodaya_2.png" /> Poligon Lodaya', layer: layer_PoligonLodaya_2},
+            {label: "Google Maps", layer: layer_GoogleMaps_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        var i = 0;
+        layer_PoligonLodaya_2.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_PoligonLodaya_2'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_RTlodaya_4.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_RTlodaya_4'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_PoligonMakamLodaya_6.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_PoligonMakamLodaya_6'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_LapanganLodaya_7.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_LapanganLodaya_7'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_JalanGangLodaya_9.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #ffffff; font-size: 5pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_JalanGangLodaya_9'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_JalanDesaLodaya_10.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #ffffff; font-size: 2pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_JalanDesaLodaya_10'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_JalanKecamatanLodaya_11.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #ffffff; font-size: 3pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_JalanKecamatanLodaya_11'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_PointDesaLodaya_12.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['Nama']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_PointDesaLodaya_12'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        map.addControl(new L.Control.Search({
+            layer: layer_PointDesaLodaya_12,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'Nama'}));
+        if (typeof url === 'undefined') {
+            document.getElementsByClassName('search-button')[0].className += ' fa fa-binoculars';
+        } else {
+            document.getElementsByClassName('search-button')[1].className += ' fa fa-binoculars';
+        }
+        resetLabels([layer_PoligonLodaya_2,layer_RTlodaya_4,layer_PoligonMakamLodaya_6,layer_LapanganLodaya_7,layer_JalanGangLodaya_9,layer_JalanDesaLodaya_10,layer_JalanKecamatanLodaya_11,layer_PointDesaLodaya_12]);
+        map.on("zoomend", function(){
+            resetLabels([layer_PoligonLodaya_2,layer_RTlodaya_4,layer_PoligonMakamLodaya_6,layer_LapanganLodaya_7,layer_JalanGangLodaya_9,layer_JalanDesaLodaya_10,layer_JalanKecamatanLodaya_11,layer_PointDesaLodaya_12]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_PoligonLodaya_2,layer_RTlodaya_4,layer_PoligonMakamLodaya_6,layer_LapanganLodaya_7,layer_JalanGangLodaya_9,layer_JalanDesaLodaya_10,layer_JalanKecamatanLodaya_11,layer_PointDesaLodaya_12]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_PoligonLodaya_2,layer_RTlodaya_4,layer_PoligonMakamLodaya_6,layer_LapanganLodaya_7,layer_JalanGangLodaya_9,layer_JalanDesaLodaya_10,layer_JalanKecamatanLodaya_11,layer_PointDesaLodaya_12]);
+        });
+        </script>        
+    </body>
+</html>
